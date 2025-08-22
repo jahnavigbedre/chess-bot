@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+venv/
+ENV/
+.venv/
+
+# Flask
+instance/
+.webassets-cache
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Stockfish binaries
+stockfish/stockfish.exe
+
+# Logs
+*.log
+
+# Misc
+*.swp
+*.swo
+
+# Notebooks
+*.ipynb_checkpoints/
+
+# Test/coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+pytest_cache/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Templates cache
+__pypackages__/
+
+# Chess PGN/analysis
+*.pgn
+*.cbh
+*.cbg
+*.cbf
+*.cbl
+*.cbp
+*.cbv
+*.ctg
+*.ctb
+*.cto
+*.ctm
+*.ctd
+*.ctf
+*.cth
+*.cti
+*.ctk
+*.ctl
+*.ctn
+*.cto
+*.ctp
+*.ctr
+*.cts
+*.ctt
+*.ctu
+*.ctw
+*.ctz

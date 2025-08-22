@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess vs AI - Stockfish Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 30px;
+        }
+
+        .board-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .game-status {
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .status-white {
+            background: #e8f4fd;
+            color: #1976d2;
+        }
+
+        .status-black {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .status-check {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .status-game-over {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .chess-board {
+            width: 480px;
+            height: 480px;
+            border: 4px solid #8b4513;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .chess-square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            font-size: 2.5rem;
+        }
+
+        .chess-square.light {
+            background-color: #f0d9b5;
+        }
+
+        .chess-square.dark {
+            background-color: #b58863;
+        }
+
+        .chess-square:hover {
+            box-shadow: inset 0 0 0 3px #4CAF50;
+        }
+
+        .chess-square.selected {
+            box-shadow: inset 0 0 0 4px #2196F3;
+            background-color: #81C784 !important;
+        }
+
+        .chess-square.legal-move {
+            box-shadow: inset 0 0 0 3px #FF9800;
+        }
+
+        .chess-square.legal-move::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: #FF9800;
+            border-radius: 50%;
+            opacity: 0.6;
+            position: absolute;
+        }
+
+        .chess-square.last-move {
+            background-color: #ffeb3b !important;
+            opacity: 0.8;
+        }
+
+        .controls-section {
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-panel h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .move-history {
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .move-item {
+            padding: 8px;
+            border-bottom: 1px solid #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Courier New', monospace;
+        }
+
+        .move-item:last-child {
+            border-bottom: none;
+        }
+
+        .move-item.human {
+            background: #e3f2fd;
+        }
+
+        .move-item.ai {
+            background: #fce4ec;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            background: #4CAF50;
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.info {
+            background: #2196F3;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .chess-board {
+                width: 320px;
+                height: 320px;
+            }
+
+            .chess-square {
+                font-size: 1.8rem;
+            }
+
+            .game-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="board-section">
+            <div class="game-header">
+                <h1>♛ Chess vs AI ♛</h1>
+                <div id="gameStatus" class="game-status status-white">White to move</div>
+            </div>
+            <div id="chessBoard" class="chess-board"></div>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-panel">
+                <h3>🎮 Game Controls</h3>
+                <div class="control-group">
+                    <label>AI Difficulty (1-20):</label>
+                    <input type="range" id="difficulty" min="1" max="20" value="5">
+                    <span id="difficultyValue">5</span>
+                </div>
+                <button id="startGame" class="btn btn-primary">🚀 Start New Game</button>
+                <button id="resetGame" class="btn btn-secondary">🔄 Reset Game</button>
+            </div>
+
+            <div class="control-panel">
+                <h3>📝 Move History</h3>
+                <div id="moveHistory" class="move-history"></div>
+            </div>
+
+            <div class="control-panel">
+                <h3>ℹ️ Game Info</h3>
+                <div style="font-family: monospace; font-size: 0.9rem;">
+                    <div>Move: <span id="moveCount">0</span></div>
+                    <div>Engine: Stockfish</div>
+                    <div>Status: <span id="gameState">Ready</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div>AI is thinking...</div>
+    </div>
+
+    <script>
+        class ChessGame {
+            constructor() {
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.gameState = null;
+                this.isPlayerTurn = true;
+                this.lastMove = null;
+                this.pieceSymbols = {
+                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+                };
+
+                this.initializeBoard();
+                this.bindEvents();
+            }
+
+            initializeBoard() {
+                const board = document.getElementById('chessBoard');
+                board.innerHTML = '';
+
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const square = document.createElement('div');
+                        square.className = `chess-square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                        square.dataset.square = this.getSquareName(row, col);
+                        square.addEventListener('click', () => this.handleSquareClick(row, col));
+                        board.appendChild(square);
+                    }
+                }
+
+                this.updateBoard();
+            }
+
+            getSquareName(row, col) {
+                return String.fromCharCode(97 + col) + (8 - row);
+            }
+
+            parseSquareName(squareName) {
+                const col = squareName.charCodeAt(0) - 97;
+                const row = 8 - parseInt(squareName[1]);
+                return [row, col];
+            }
+
+            bindEvents() {
+                document.getElementById('startGame').addEventListener('click', () => this.startGame());
+                document.getElementById('resetGame').addEventListener('click', () => this.resetGame());
+
+                const difficultySlider = document.getElementById('difficulty');
+                difficultySlider.addEventListener('input', (e) => {
+                    document.getElementById('difficultyValue').textContent = e.target.value;
+                    this.setDifficulty(parseInt(e.target.value));
+                });
+            }
+
+            async startGame() {
+                this.showLoading();
+                try {
+                    const difficulty = document.getElementById('difficulty').value;
+                    const response = await fetch('/api/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ difficulty: parseInt(difficulty) })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.gameState = data.board_state;
+                        this.updateBoard();
+                        this.updateGameStatus();
+                        this.showNotification('Game started!', 'success');
+                    } else {
+                        this.showNotification(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('Failed to start game: ' + error.message, 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async resetGame() {
+                try {
+                    const response = await fetch('/api/reset', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success) {
+                        this.gameState = data.board_state;
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                        this.lastMove = null;
+                        this.isPlayerTurn = true;
+                        this.updateBoard();
+                        this.updateGameStatus();
+                        this.clearMoveHistory();
+                        this.showNotification('Game reset!', 'info');
+                    }
+                } catch (error) {
+                    this.showNotification('Failed to reset game: ' + error.message, 'error');
+                }
+            }
+
+            async setDifficulty(level) {
+                try {
+                    await fetch('/api/difficulty', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ level })
+                    });
+                } catch (error) {
+                    console.error('Failed to set difficulty:', error);
+                }
+            }
+
+            handleSquareClick(row, col) {
+                if (!this.gameState || !this.isPlayerTurn) return;
+
+                const squareName = this.getSquareName(row, col);
+
+                if (this.selectedSquare === squareName) {
+                    this.clearSelection();
+                    return;
+                }
+
+                if (this.selectedSquare && this.legalMoves.includes(this.selectedSquare + squareName)) {
+                    this.makeMove(this.selectedSquare + squareName);
+                    return;
+                }
+
+                this.selectSquare(squareName);
+            }
+
+            selectSquare(squareName) {
+                this.clearSelection();
+                this.selectedSquare = squareName;
+
+                // Highlight legal moves
+                this.legalMoves = this.gameState.legal_moves.filter(move => move.startsWith(squareName));
+
+                // Update visual selection
+                this.updateSquareHighlights();
+            }
+
+            clearSelection() {
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.updateSquareHighlights();
+            }
+
+            updateSquareHighlights() {
+                document.querySelectorAll('.chess-square').forEach(square => {
+                    square.classList.remove('selected', 'legal-move', 'last-move');
+                });
+
+                if (this.selectedSquare) {
+                    const selectedElement = document.querySelector(`[data-square="${this.selectedSquare}"]`);
+                    if (selectedElement) selectedElement.classList.add('selected');
+
+                    this.legalMoves.forEach(move => {
+                        const targetSquare = move.slice(2, 4);
+                        const targetElement = document.querySelector(`[data-square="${targetSquare}"]`);
+                        if (targetElement) targetElement.classList.add('legal-move');
+                    });
+                }
+
+                if (this.lastMove) {
+                    const fromSquare = this.lastMove.slice(0, 2);
+                    const toSquare = this.lastMove.slice(2, 4);
+                    [fromSquare, toSquare].forEach(square => {
+                        const element = document.querySelector(`[data-square="${square}"]`);
+                        if (element) element.classList.add('last-move');
+                    });
+                }
+            }
+
+            async makeMove(move) {
+                if (!this.isPlayerTurn) return;
+
+                this.isPlayerTurn = false;
+                this.showLoading();
+
+                try {
+                    const response = await fetch('/api/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ move })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.gameState = data.board_state;
+                        this.lastMove = data.ai_move;
+                        this.clearSelection();
+                        this.updateBoard();
+                        this.updateGameStatus();
+                        this.addMoveToHistory(move, 'human');
+
+                        if (data.ai_move) {
+                            this.addMoveToHistory(data.ai_move, 'ai');
+                        }
+
+                        if (data.game_over) {
+                            this.handleGameOver();
+                        } else {
+                            this.isPlayerTurn = true;
+                        }
+                    } else {
+                        this.showNotification(data.error, 'error');
+                        this.isPlayerTurn = true;
+                    }
+                } catch (error) {
+                    this.showNotification('Move failed: ' + error.message, 'error');
+                    this.isPlayerTurn = true;
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            updateBoard() {
+                if (!this.gameState) return;
+
+                const fen = this.gameState.fen;
+                const position = fen.split(' ')[0];
+                const rows = position.split('/');
+
+                let squareIndex = 0;
+                const squares = document.querySelectorAll('.chess-square');
+
+                for (let row = 0; row < 8; row++) {
+                    let col = 0;
+                    for (let char of rows[row]) {
+                        if (char >= '1' && char <= '8') {
+                            const emptySquares = parseInt(char);
+                            for (let i = 0; i < emptySquares; i++) {
+                                squares[squareIndex].textContent = '';
+                                squareIndex++;
+                                col++;
+                            }
+                        } else {
+                            squares[squareIndex].textContent = this.pieceSymbols[char] || '';
+                            squareIndex++;
+                            col++;
+                        }
+                    }
+                }
+
+                this.updateSquareHighlights();
+            }
+
+            updateGameStatus() {
+                if (!this.gameState) return;
+
+                const statusElement = document.getElementById('gameStatus');
+                const moveCountElement = document.getElementById('moveCount');
+                const gameStateElement = document.getElementById('gameState');
+
+                moveCountElement.textContent = this.gameState.move_count;
+
+                let statusText = '';
+                let statusClass = '';
+
+                if (this.gameState.is_checkmate) {
+                    statusText = this.gameState.turn === 'white' ? 'Black wins by checkmate!' : 'White wins by checkmate!';
+                    statusClass = 'status-game-over';
+                    gameStateElement.textContent = 'Game Over';
+                } else if (this.gameState.is_stalemate) {
+                    statusText = 'Game drawn by stalemate';
+                    statusClass = 'status-game-over';
+                    gameStateElement.textContent = 'Draw';
+                } else if (this.gameState.is_check) {
+                    statusText = `${this.gameState.turn.charAt(0).toUpperCase() + this.gameState.turn.slice(1)} in check`;
+                    statusClass = 'status-check';
+                    gameStateElement.textContent = 'In Progress';
+                } else {
+                    statusText = `${this.gameState.turn.charAt(0).toUpperCase() + this.gameState.turn.slice(1)} to move`;
+                    statusClass = this.gameState.turn === 'white' ? 'status-white' : 'status-black';
+                    gameStateElement.textContent = 'In Progress';
+                }
+
+                statusElement.textContent = statusText;
+                statusElement.className = `game-status ${statusClass}`;
+            }
+
+            addMoveToHistory(move, player) {
+                const historyElement = document.getElementById('moveHistory');
+                const moveItem = document.createElement('div');
+                moveItem.className = `move-item ${player}`;
+
+                const moveNumber = Math.floor(this.gameState.move_count / 2) + 1;
+                const playerSymbol = player === 'human' ? '👤' : '🤖';
+
+                moveItem.innerHTML = `
+                    <span>${playerSymbol} ${move}</span>
+                    <span>${moveNumber}</span>
+                `;
+
+                historyElement.appendChild(moveItem);
+                historyElement.scrollTop = historyElement.scrollHeight;
+            }
+
+            clearMoveHistory() {
+                document.getElementById('moveHistory').innerHTML = '';
+            }
+
+            handleGameOver() {
+                this.isPlayerTurn = false;
+                let message = '';
+
+                if (this.gameState.is_checkmate) {
+                    message = this.gameState.turn === 'white' ? '🎉 You won by checkmate!' : '😔 AI won by checkmate!';
+                } else if (this.gameState.is_stalemate) {
+                    message = '🤝 Game drawn by stalemate!';
+                }
+
+                setTimeout(() => {
+                    this.showNotification(message, 'info');
+                }, 1000);
+            }
+
+            showLoading() {
+                document.getElementById('loading').style.display = 'block';
+            }
+
+            hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            showNotification(message, type = 'info') {
+                // Remove existing notifications
+                document.querySelectorAll('.notification').forEach(n => n.remove());
+
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.remove();
+                }, 4000);
+            }
+        }
+
+        // Initialize the game when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.chessGame = new ChessGame();
+        });
+    </script>
+</body>
+
+</html>
